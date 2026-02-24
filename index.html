@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StorySpark</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+body{margin:0;font-family:Arial, sans-serif;background:#0f0f14;color:white;}
+header{background:linear-gradient(90deg,#7f00ff,#00d4ff);padding:15px;text-align:center;font-size:24px;font-weight:bold;}
+nav{display:flex;justify-content:space-around;background:#1a1a22;padding:10px;position:sticky;top:0;z-index:100;}
+nav button{background:none;border:none;color:white;font-size:16px;cursor:pointer;padding:10px;}
+.section{display:none;padding:20px;}
+.active{display:block;}
+.card{background:#1a1a22;padding:15px;margin:10px 0;border-radius:10px;border-left:4px solid #00d4ff;}
+textarea,input{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:1px solid #333;background:#2a2a35;color:white;box-sizing:border-box;}
+button.post{width:100%;margin-top:10px;padding:12px;border:none;border-radius:8px;background:#00d4ff;color:black;font-weight:bold;cursor:pointer;}
+.chat-box{max-height:300px;overflow-y:auto;margin-top:15px;background:#050505;padding:10px;border-radius:10px;}
+.chat-message{background:#2a2a35;padding:10px;border-radius:10px;margin:8px 0;word-wrap:break-word;}
+.badge{display:inline-block;background:#ff0080;padding:5px 10px;border-radius:20px;margin-top:5px;font-size:11px;font-weight:bold;}
+</style>
+</head>
+
+<body>
+
+<header>🌟 StorySpark</header>
+
+<nav>
+<button onclick="showSection('storyverse')">Storyverse</button>
+<button onclick="showSection('confess')">Confess Cloud</button>
+<button onclick="showSection('talent')">Talent Arena</button>
+</nav>
+
+<div id="storyverse" class="section active">
+<h2>🎭 Storyverse</h2>
+<p>Lanjutkan cerita dari orang sebelumnya!</p>
+<input id="storyAuthor" placeholder="Nama kamu">
+<textarea id="storyInput" placeholder="Tulis lanjutan cerita..."></textarea>
+<button class="post" onclick="postStory()">Post Episode</button>
+<div id="storyList"></div>
+</div>
+
+<div id="confess" class="section">
+<h2>💌 Confess Cloud</h2>
+<p>Curhat anonim di sini...</p>
+<input id="confessName" placeholder="Nama (boleh Anonim)">
+<input id="confessInput" placeholder="Tulis pesan kamu...">
+<button class="post" onclick="postConfess()">Kirim Pesan</button>
+<div id="confessList" class="chat-box"></div>
+</div>
+
+<div id="talent" class="section">
+<h2>🎨 Talent Arena</h2>
+<p>Pamerkan karyamu!</p>
+<input id="talentAuthor" placeholder="Nama kamu">
+<input id="talentTitle" placeholder="Judul karya">
+<textarea id="talentDesc" placeholder="Deskripsi karya/link foto"></textarea>
+<button class="post" onclick="postTalent()">Upload Karya</button>
+<div id="talentList"></div>
+</div>
+
+<script>
+/* ========= SUDAH DIGABUNG DENGAN CONFIG KAMU ========= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBQMKmbh9iF-JBHnEWefBtiz-Dy_64Kdtw",
+  authDomain: "storyverse-56bea.firebaseapp.com",
+  databaseURL: "https://storyverse-56bea-default-rtdb.firebaseio.com",
+  projectId: "storyverse-56bea",
+  storageBucket: "storyverse-56bea.firebasestorage.app",
+  messagingSenderId: "661069034919",
+  appId: "1:661069034919:web:cbe78d55dd8dbebc993282",
+  measurementId: "G-D9S55NFX6J"
+};
+
+// Inisialisasi Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* FUNGSI NAVIGASI */
+function showSection(id){
+  document.querySelectorAll('.section').forEach(sec=>sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* FUNGSI KIRIM DATA */
+function postStory(){
+  const author = document.getElementById("storyAuthor").value || "Anonim";
+  const text = document.getElementById("storyInput").value;
+  if(text.trim()==="") return;
+  db.ref("storyverse").push({author, text});
+  document.getElementById("storyInput").value="";
+}
+
+function postConfess(){
+  const name = document.getElementById("confessName").value || "Anonim";
+  const text = document.getElementById("confessInput").value;
+  if(text.trim()==="") return;
+  db.ref("confess").push({name, text});
+  document.getElementById("confessInput").value="";
+}
+
+function postTalent(){
+  const author = document.getElementById("talentAuthor").value || "Anonim";
+  const title = document.getElementById("talentTitle").value;
+  const desc = document.getElementById("talentDesc").value;
+  if(title.trim()==="" || desc.trim()==="") return;
+
+  const badges = ["🌟 Mind Blown","🔥 Level Pro","🎬 Cinematic","💎 Hidden Talent"];
+  const randomBadge = badges[Math.floor(Math.random()*badges.length)];
+
+  db.ref("talent").push({author, title, desc, badge: randomBadge});
+  document.getElementById("talentTitle").value="";
+  document.getElementById("talentDesc").value="";
+}
+
+/* FUNGSI AMBIL DATA REALTIME (Biar langsung muncul di semua orang) */
+db.ref("storyverse").on("child_added", snap=>{
+  const d = snap.val();
+  const card = document.createElement("div");
+  card.className="card";
+  card.innerHTML = `<b>${d.author}</b><br>${d.text}`;
+  document.getElementById("storyList").prepend(card);
+});
+
+db.ref("confess").on("child_added", snap=>{
+  const d = snap.val();
+  const msg = document.createElement("div");
+  msg.className="chat-message";
+  msg.innerHTML = `<b>${d.name}:</b> ${d.text}`;
+  const box = document.getElementById("confessList");
+  box.appendChild(msg);
+  box.scrollTop = box.scrollHeight; // Auto-scroll ke pesan terbaru
+});
+
+db.ref("talent").on("child_added", snap=>{
+  const d = snap.val();
+  const card = document.createElement("div");
+  card.className="card";
+  card.innerHTML = `<b>${d.title}</b> - oleh ${d.author}<br>${d.desc}<br><span class="badge">${d.badge}</span>`;
+  document.getElementById("talentList").prepend(card);
+});
+</script>
+
+</body>
+</html>
